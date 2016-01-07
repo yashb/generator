@@ -1,0 +1,44 @@
+{
+	"name": "PhpParser",
+	"title": "PHP Parser",
+	"description": "Php Parser for web developers",
+	"version": "1.0.0",
+	"parentMenu": "menuPhp",
+	"menuName": "Php Parser",
+	"actions": [
+		{
+		"name": "parsePhp",
+		"title": "Parse Php",
+		"parentMenu": "menuPhp",
+		"shortcutKeys": "",
+		"command" : "php parser/interface.php parsePhp selected_text:file_path",
+		"icons": {}
+		},
+		{
+		"name": "parsePhpProject",
+		"title": "Parse Project",
+		"parentMenu": "menuPhp",
+		"shortcutKeys": "",
+		"command" : "php parser/interface.php parsePhpProject",
+		"icons": {}
+		}
+	],
+	
+	"events" : {
+		
+    		
+    		"register_event_type" : "Php File,on_text_changed,php parser/interface.php parsePhp selected_text:file_path"
+		
+	}
+    ,
+    "files" : {
+        "php" : ["interface"]
+    
+    }
+    , 
+
+	"icons": {
+	"128": "jsonlint-logo.png"
+	},
+	"license": "Apache"
+}

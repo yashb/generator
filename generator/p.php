@@ -12,9 +12,9 @@ use PhpParser\Node\Stmt;
 class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
 {
     function __construct() {
-
+        
     }
-
+    
     public function enterNode(Node $node)
     {
         /*if ($node instanceof Node\Name)
@@ -24,25 +24,48 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         }*/
         
         if ( $node instanceof Stmt\Interface_
-                  || $node instanceof Stmt\Function_)
+        || $node instanceof Stmt\Function_)
         {
             echo "\nNode name:". $node->name."\n\n";
             
             print_r($node);
-
+            
             //$node->name = $node->namespacedName->toString('_');
         }
         
-         elseif ($node instanceof Stmt\Class_)
+        elseif ($node instanceof Stmt\Trait_)
         {
             
-            //List all implements 
+            //List all implements
             
             //List all classes
             
             //This class can use those functions as own
             //Parse and get those functions also
-             
+            
+            
+            echo "\Trait name:". $node->name."\n\n";
+            
+        }
+        elseif ($node instanceof Stmt\TraitUse)
+        {
+/*            echo "\Trait name:". $node->traits."\n\n";*/
+            
+            foreach ($node->traits as $trait) {
+            	print_r($trait);
+            }
+            
+        }
+        elseif ($node instanceof Stmt\Class_)
+        {
+            
+            //List all implements
+            
+            //List all classes
+            
+            //This class can use those functions as own
+            //Parse and get those functions also
+            
             
             echo "\nClass name:". $node->name."\n\n";
             
@@ -50,7 +73,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         
         elseif ($node instanceof Stmt\ClassMethod)
         {
-             echo "\nClass method:". $node->name."\n\n";
+            echo "\nClass method:". $node->name."\n\n";
         }
         elseif ($node instanceof Stmt\Const_)
         {
@@ -86,9 +109,9 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
 
 
 $lexer = new PhpParser\Lexer(array(
-    'usedAttributes' => array(
-        'comments', 'startLine', 'endLine', 'startTokenPos', 'endTokenPos'
-    )
+'usedAttributes' => array(
+'comments', 'startLine', 'endLine', 'startTokenPos', 'endTokenPos'
+)
 ));
 
 $parser = (new PhpParser\ParserFactory)->create(PhpParser\ParserFactory::PREFER_PHP5, $lexer);
@@ -101,16 +124,16 @@ $traverser->addVisitor($visitor);
 $filename = $argv[1];
 
 if(empty($filename))
-    exit();
+exit();
 
 try {
     $stmts = $parser->parse(file_get_contents($filename));
-
-    //print_r($stmts);
-
+    
+    print_r($stmts);
+    
     //$visitor->setTokens($lexer->getTokens());
     $stmts = $traverser->traverse($stmts);
-
+    
 }
 catch (PhpParser\Error $e)
 {

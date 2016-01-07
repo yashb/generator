@@ -98,8 +98,13 @@ $visitor = new MyParserNodeVisitor();
 $traverser = new PhpParser\NodeTraverser();
 $traverser->addVisitor($visitor);
 
+$filename = $argv[1];
+
+if(empty($filename))
+    exit();
+
 try {
-    $stmts = $parser->parse(file_get_contents('sample.php'));
+    $stmts = $parser->parse(file_get_contents($filename));
 
     //print_r($stmts);
 

@@ -9,6 +9,8 @@ use PhpParser\NodeTraverser;
 use PhpParser\Node;
 use PhpParser\Node\Stmt;
 
+
+
 define("CACHE_DIR", "_kiwicache_" . DIRECTORY_SEPARATOR );
 
 class JsonHelper
@@ -19,6 +21,7 @@ class JsonHelper
             mkdir( CACHE_DIR , 0777, true);
     }
     
+
     public static function writeJson($filename, $result)
     {
         $filename = CACHE_DIR . basename($filename,".php");
@@ -35,6 +38,8 @@ class JsonHelper
         
         fclose($fp);
     }
+    
+    
 }
 
 class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
@@ -43,12 +48,25 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
     private $result;
     private $filename;
     
+    private $className;
+    private $classMethods;
+    
     function __construct($filename) 
     {
         $this->filename = $filename;
+        
+        $this->result['functions'] = [];
     }
     
-    
+    public function addItem($name, $type)
+    {
+        
+        $this->className = $name;
+        
+        $this->result[$this->className]['type'] = $type;
+        $this->result[$this->className]['methods'] = [];
+
+    }
     
     public function enterNode(Node $node)
     {
@@ -56,14 +74,22 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         {
              //echo "Node nameD:". $node."\n\n";
             return new Node\Name($node->toString('_'));
-        }*/
+        }
         
-        if ( $node instanceof Stmt\Interface_
-        || $node instanceof Stmt\Function_)
+        || $node instanceof Stmt\Function_
+        
+        */
+         if ( $node instanceof Stmt\Function_ )
+        {
+            array_push( $this->result['functions'], $node->name );
+        }
+        else if ( $node instanceof Stmt\Interface_ )
         {
             echo "\nNode name:". $node->name."\n\n";
             
             //print_r($node);
+            
+            $this->addItem($node->name, 'interface');
             
             //$node->name = $node->namespacedName->toString('_');
         }
@@ -104,13 +130,21 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
             
             echo "\nClass name:". $node->name."\n\n";
             
-            $this->result['class'] = $node->name;
+            
+            $this->addItem($node->name, 'class');
+/*            $this->result['class'] = $node->name;*/
+           
             
         }
         
         elseif ($node instanceof Stmt\ClassMethod)
         {
             echo "\nClass method:". $node->name."\n\n";
+            
+            //$this->result[$this->className]['methods'][] = $node->name;
+            array_push( $this->result[$this->className]['methods'], $node->name );
+            //$this->classMethods[] = $node->name;
+            
         }
         elseif ($node instanceof Stmt\Const_)
         {
@@ -144,6 +178,9 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
     
     public function afterTraverse(array $nodes)
     {
+        //create class and methods
+        print_r($this->result);
+        //$this->result[$className]= $classMethods;
         
         //Write a file with some node value
         JsonHelper::writeJson($this->filename,$this->result);

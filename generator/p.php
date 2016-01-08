@@ -12,6 +12,8 @@ use PhpParser\Node\Stmt;
 
 
 define("CACHE_DIR", "_kiwicache_" . DIRECTORY_SEPARATOR );
+define("IS_DEBUG", FALSE );
+
 
 class Indexer
 {
@@ -46,11 +48,12 @@ class Indexer
         
         foreach ($iter as $file) {
             
-            echo "File: ". $file->getPath() . PHP_EOL;
+            if(IS_DEBUG)
+                echo "File: ". $file->getPathname() . PHP_EOL;
             
             if($file->getExtension() == "php")
             {
-                $this->scanFile( $file->getPath() );
+                $this->scanFile( $file->getPathname() );
             }
             
             /*if ($dir->isDir()) {
@@ -61,7 +64,7 @@ class Indexer
 }
 
 
-class JsonHelper
+class DirHelper
 {
     public static function createCache()
     {
@@ -69,23 +72,12 @@ class JsonHelper
         mkdir( CACHE_DIR , 0777, true);
     }
     
-    
-    public static function writeJson($filename, $result)
+    public static function createDir($dir)
     {
-        $filename = CACHE_DIR . basename($filename,".php");
-        
-        echo "Writing json file -> " .$filename.PHP_EOL ;
-        
-        $content = json_encode($result);
-        
-        echo "content: " . $content.PHP_EOL;
-        
-        $fp = fopen($filename.'.json', 'w');
-        
-        fwrite($fp, $content );
-        
-        fclose($fp);
+        if(!is_dir($dir))
+            mkdir( $dir , 0777, true);
     }
+    
     
     
 }
@@ -93,13 +85,16 @@ class JsonHelper
 class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
 {
     
+    private $namespace_;
     private $result;
     private $filename;
     
     private $className;
     private $classMethods;
     
-    function __construct($filename)
+    private $debug;
+    
+    function __construct( $filename)
     {
         $this->filename = $filename;
         
@@ -133,7 +128,8 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         }
         else if ( $node instanceof Stmt\Interface_ )
         {
-            echo "\nNode name:". $node->name."\n\n";
+            if(IS_DEBUG)
+                echo "\nNode name:". $node->name."\n\n";
             
             //print_r($node);
             
@@ -152,8 +148,8 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
             //This class can use those functions as own
             //Parse and get those functions also
             
-            
-            echo "\Trait name:". $node->name."\n\n";
+            if(IS_DEBUG)
+                echo "\Trait name:". $node->name."\n\n";
             
         }
         elseif ($node instanceof Stmt\TraitUse)
@@ -176,7 +172,8 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
             //Parse and get those functions also
             
             
-            echo "\nClass name:". $node->name."\n\n";
+            if(IS_DEBUG)
+                echo "\nClass name:". $node->name."\n\n";
             
             
             $this->addItem($node->name, 'class');
@@ -187,7 +184,8 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         
         elseif ($node instanceof Stmt\ClassMethod)
         {
-            echo "\nClass method:". $node->name."\n\n";
+            if(IS_DEBUG)
+                echo "\nClass method:". $node->name."\n\n";
             
             //$this->result[$this->className]['methods'][] = $node->name;
             array_push( $this->result[$this->className]['methods'], $node->name );
@@ -202,21 +200,32 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         }
         elseif ($node instanceof Stmt\Namespace_)
         {
-            echo "\nNode Namespace_ name:". $node->name."\n\n";
+            $this->namespace_ = $node->name;
+            
+            $this->namespace_ = str_replace("\\" ,"/" , $this->namespace_ );
+
+            //if(IS_DEBUG)
+                echo "\nNode Namespace_ name:". $node->name."\n\n";
+            
+            
+            
+            
             // returning an array merges is into the parent array
             //return $node->stmts;
         }
         elseif ($node instanceof Stmt\Use_)
         {
             //print_r($node);
-            echo "\nNode Use_ Namespace_ name:";//. $node->uses[0]->name."\n\n";
+            if(IS_DEBUG)
+                echo "\nNode Use_ Namespace_ name:";//. $node->uses[0]->name."\n\n";
             
             foreach($node->uses as $use)
             {
                 
                 //Name is using _ as seperator
                 
-                echo $use->name. " | " .$use->alias. "\n\n";
+                if(IS_DEBUG)
+                    echo $use->name. " | " .$use->alias. "\n\n";
             }
             
             // returning false removed the node altogether
@@ -227,11 +236,46 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
     public function afterTraverse(array $nodes)
     {
         //create class and methods
-        print_r($this->result);
+        if(IS_DEBUG)
+            print_r($this->result);
+    
         //$this->result[$className]= $classMethods;
         
         //Write a file with some node value
-        JsonHelper::writeJson($this->filename,$this->result);
+       $this->writeJson();
+    }
+    
+    public function writeJson()
+    {
+        
+        if(empty($this->namespace_))
+        {
+            $filename = CACHE_DIR  .basename($this->filename,".php") .'.json';
+        }
+        else
+        {
+            $dir = CACHE_DIR . $this->namespace_ . DIRECTORY_SEPARATOR;
+            
+            DirHelper::createDir($dir);
+            
+            $filename = $dir .  basename($this->filename,".php") .'.json';
+        }
+        
+        
+        
+        //if(IS_DEBUG)
+            echo "Writing json file -> " .$filename . PHP_EOL ;
+        
+        $content = json_encode($this->result);
+        
+        if(IS_DEBUG)
+            echo "content: " . $content.PHP_EOL;
+        
+        $fp = fopen($filename, 'w');
+        
+        fwrite($fp, $content );
+        
+        fclose($fp);
     }
 }
 
@@ -250,7 +294,7 @@ class MyPhpParser
         $this->filename = $filename;
         
         //Create cache dir
-        JsonHelper::createCache();
+        DirHelper::createCache();
         
         //Init 
         $this->initInstances();

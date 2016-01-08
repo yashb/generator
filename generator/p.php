@@ -22,6 +22,16 @@ class Indexer
         $this->path = $path;
     }
     
+    public function scanFile($filename)
+    {
+        
+
+        if(empty($filename))
+            return;
+        
+        new MyPhpParser($filename);
+    }
+    
     public function scan()
     {
         
@@ -34,8 +44,15 @@ class Indexer
         
         $paths = array($this->path);
         
-        foreach ($iter as $path => $dir) {
-            echo "File: ". $path;
+        foreach ($iter as $file) {
+            
+            echo "File: ". $file->getPath() . PHP_EOL;
+            
+            if($file->getExtension() == "php")
+            {
+                $this->scanFile( $file->getPath() );
+            }
+            
             /*if ($dir->isDir()) {
                 $paths[] = $path;
             }*/
@@ -86,7 +103,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
     {
         $this->filename = $filename;
         
-        $this->result['functions'] = [];
+        $this->result['functions'] = array();
     }
     
     public function addItem($name, $type)
@@ -95,7 +112,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         $this->className = $name;
         
         $this->result[$this->className]['type'] = $type;
-        $this->result[$this->className]['methods'] = [];
+        $this->result[$this->className]['methods'] = array();
         
     }
     
@@ -284,13 +301,16 @@ class MyPhpParser
 
 
 
+
+
+$ind = new Indexer(getcwd(). DIRECTORY_SEPARATOR . "test");
+
+
 $filename = $argv[1];
 
-
 if(empty($filename))
-exit();
-
-new MyPhpParser($filename);
-
+    $ind->scan();
+else 
+    $ind->scanFile($filename);
 
 //getcwd()

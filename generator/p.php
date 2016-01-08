@@ -204,7 +204,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
             
             $this->namespace_ = str_replace("\\" ,"/" , $this->namespace_ );
 
-            //if(IS_DEBUG)
+            if(IS_DEBUG)
                 echo "\nNode Namespace_ name:". $node->name."\n\n";
             
             

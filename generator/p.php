@@ -9,11 +9,46 @@ use PhpParser\NodeTraverser;
 use PhpParser\Node;
 use PhpParser\Node\Stmt;
 
+define("CACHE_DIR", "_kiwicache_" . DIRECTORY_SEPARATOR );
+
+class JsonHelper
+{
+    public static function createCache()
+    {
+        if(!is_dir(CACHE_DIR))
+            mkdir( CACHE_DIR , 0777, true);
+    }
+    
+    public static function writeJson($filename, $result)
+    {
+        $filename = CACHE_DIR . basename($filename,".php");
+
+        echo "Writing json file -> " .$filename.PHP_EOL ;
+        
+        $content = json_encode($result);
+        
+        echo "content: " . $content.PHP_EOL;
+
+        $fp = fopen($filename.'.json', 'w');
+        
+        fwrite($fp, $content );
+        
+        fclose($fp);
+    }
+}
+
 class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
 {
-    function __construct() {
-        
+    
+    private $result;
+    private $filename;
+    
+    function __construct($filename) 
+    {
+        $this->filename = $filename;
     }
+    
+    
     
     public function enterNode(Node $node)
     {
@@ -28,7 +63,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         {
             echo "\nNode name:". $node->name."\n\n";
             
-            print_r($node);
+            //print_r($node);
             
             //$node->name = $node->namespacedName->toString('_');
         }
@@ -49,10 +84,10 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         }
         elseif ($node instanceof Stmt\TraitUse)
         {
-/*            echo "\Trait name:". $node->traits."\n\n";*/
+            /*            echo "\Trait name:". $node->traits."\n\n";*/
             
             foreach ($node->traits as $trait) {
-            	print_r($trait);
+                //print_r($trait);
             }
             
         }
@@ -68,6 +103,8 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
             
             
             echo "\nClass name:". $node->name."\n\n";
+            
+            $this->result['class'] = $node->name;
             
         }
         
@@ -104,6 +141,13 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
             //return false;
         }
     }
+    
+    public function afterTraverse(array $nodes)
+    {
+        
+        //Write a file with some node value
+        JsonHelper::writeJson($this->filename,$this->result);
+    }
 }
 
 
@@ -114,14 +158,19 @@ $lexer = new PhpParser\Lexer(array(
 )
 ));
 
+//Create cache dir
+
+JsonHelper::createCache();
+
+$filename = $argv[1];
+
 $parser = (new PhpParser\ParserFactory)->create(PhpParser\ParserFactory::PREFER_PHP5, $lexer);
 
-$visitor = new MyParserNodeVisitor();
+$visitor = new MyParserNodeVisitor($filename);
 
 $traverser = new PhpParser\NodeTraverser();
 $traverser->addVisitor($visitor);
 
-$filename = $argv[1];
 
 if(empty($filename))
 exit();
@@ -129,7 +178,7 @@ exit();
 try {
     $stmts = $parser->parse(file_get_contents($filename));
     
-    print_r($stmts);
+    //print_r($stmts);
     
     //$visitor->setTokens($lexer->getTokens());
     $stmts = $traverser->traverse($stmts);

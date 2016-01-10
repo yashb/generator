@@ -10,8 +10,7 @@ use PhpParser\Node;
 use PhpParser\Node\Stmt;
 
 
-
-define("CACHE_DIR", "_kiwicache_" . DIRECTORY_SEPARATOR );
+define("CACHE_DIR", ".kiwicache" . DIRECTORY_SEPARATOR );
 define("IS_DEBUG", FALSE );
 
 
@@ -26,7 +25,6 @@ class Indexer
     
     public function scanFile($filename)
     {
-        
 
         if(empty($filename))
             return;
@@ -37,11 +35,10 @@ class Indexer
     public function scan()
     {
         
-        
         $iter = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($this->path, RecursiveDirectoryIterator::SKIP_DOTS),
-        RecursiveIteratorIterator::SELF_FIRST,
-        RecursiveIteratorIterator::CATCH_GET_CHILD // Ignore "Permission denied"
+            new RecursiveDirectoryIterator($this->path, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST,
+            RecursiveIteratorIterator::CATCH_GET_CHILD // Ignore "Permission denied"
         );
         
         $paths = array($this->path);
@@ -86,11 +83,14 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
 {
     
     private $namespace_;
+    private $use_ = array();
     private $result;
     private $filename;
     
     private $className;
     private $classMethods;
+    
+    private $functions = array();
     
     private $debug;
     
@@ -98,7 +98,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
     {
         $this->filename = $filename;
         
-        $this->result['functions'] = array();
+        
     }
     
     public function addItem($name, $type)
@@ -108,6 +108,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         
         $this->result[$this->className]['type'] = $type;
         $this->result[$this->className]['methods'] = array();
+        $this->result[$this->className]['use'] = array();
         
     }
     
@@ -124,7 +125,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         */
         if ( $node instanceof Stmt\Function_ )
         {
-            array_push( $this->result['functions'], $node->name );
+            array_push( $this->functions, $node->name );
         }
         else if ( $node instanceof Stmt\Interface_ )
         {
@@ -225,7 +226,15 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
                 //Name is using _ as seperator
                 
                 if(IS_DEBUG)
+                {
                     echo $use->name. " | " .$use->alias. "\n\n";
+                    echo "\nClass method:". $use->name."\n\n";
+                }
+                    
+                    
+            
+                //$this->result[$this->className]['methods'][] = $node->name;
+                array_push( $this->use_, array( "name" => $use->name->parts, "alias" => $use->alias) );
             }
             
             // returning false removed the node altogether
@@ -262,9 +271,16 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         }
         
         
+        $this->result['namespace'] = $this->namespace_;
+        $this->result['use'] = $this->use_;
+        $this->result['functions'] = $this->functions;
         
-        //if(IS_DEBUG)
+        
+        if(IS_DEBUG)
+        {
+            //print_r($this->result);
             echo "Writing json file -> " .$filename . PHP_EOL ;
+        }
         
         $content = json_encode($this->result);
         

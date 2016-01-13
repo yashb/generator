@@ -82,7 +82,7 @@ class DirHelper
 class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
 {
     
-    private $namespace_;
+    private $namespace_ = array();
     private $use_ = array();
     private $result;
     private $filename;
@@ -101,14 +101,16 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         
     }
     
-    public function addItem($name, $type)
+    public function addItem($node, $type)
     {
         
-        $this->className = $name;
+        $this->className = $node->name;
         
         $this->result[$this->className]['type'] = $type;
         $this->result[$this->className]['methods'] = array();
         $this->result[$this->className]['use'] = array();
+        $this->result[$this->className]['position'] = array( "name" => $node->name , "position" => $node->getAttributes() );
+        
         
     }
     
@@ -125,7 +127,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         */
         if ( $node instanceof Stmt\Function_ )
         {
-            array_push( $this->functions, $node->name );
+            array_push( $this->functions, array( "name" => $node->name , "position" => $node->getAttributes() ) );
         }
         else if ( $node instanceof Stmt\Interface_ )
         {
@@ -134,14 +136,14 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
             
             //print_r($node);
             
-            $this->addItem($node->name, 'interface');
+            $this->addItem($node, 'interface');
             
             //$node->name = $node->namespacedName->toString('_');
         }
         
         elseif ($node instanceof Stmt\Trait_)
         {
-            
+            $this->addItem($node, 'trait');
             //List all implements
             
             //List all classes
@@ -157,6 +159,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         {
             /*            echo "\Trait name:". $node->traits."\n\n";*/
             
+            ///FIXME implement it here
             foreach ($node->traits as $trait) {
                 //print_r($trait);
             }
@@ -177,7 +180,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
                 echo "\nClass name:". $node->name."\n\n";
             
             
-            $this->addItem($node->name, 'class');
+            $this->addItem($node, 'class');
             /*            $this->result['class'] = $node->name;*/
             
             
@@ -189,8 +192,10 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
                 echo "\nClass method:". $node->name."\n\n";
             
             //$this->result[$this->className]['methods'][] = $node->name;
-            array_push( $this->result[$this->className]['methods'], $node->name );
+            array_push( $this->result[$this->className]['methods'], array( "name" => $node->name , "position" => $node->getAttributes() ) );
             //$this->classMethods[] = $node->name;
+            
+            //print_r($node->getAttributes());
             
         }
         elseif ($node instanceof Stmt\Const_)
@@ -201,9 +206,9 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         }
         elseif ($node instanceof Stmt\Namespace_)
         {
-            $this->namespace_ = $node->name;
+            $this->namespace_ = array( "name" => str_replace("\\" ,"/" ,$node->name) , "position" => $node->getAttributes() ) ;
             
-            $this->namespace_ = str_replace("\\" ,"/" , $this->namespace_ );
+/*            $this->namespace_ =  $this->namespace_ );*/
 
             if(IS_DEBUG)
                 echo "\nNode Namespace_ name:". $node->name."\n\n";
@@ -234,7 +239,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
                     
             
                 //$this->result[$this->className]['methods'][] = $node->name;
-                array_push( $this->use_, array( "name" => $use->name->parts, "alias" => $use->alias) );
+                array_push( $this->use_, array( "name" => $use->name->parts, "alias" => $use->alias   , "position" => $node->getAttributes() ) );
             }
             
             // returning false removed the node altogether
@@ -246,7 +251,10 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
     {
         //create class and methods
         if(IS_DEBUG)
+        {
             print_r($this->result);
+            echo "filname: ". $this->filename;
+        }
     
         //$this->result[$className]= $classMethods;
         
@@ -256,6 +264,8 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
     
     public function writeJson()
     {
+        
+        $fullname = $this->filename;
         
         if(empty($this->namespace_))
         {
@@ -274,15 +284,19 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         $this->result['namespace'] = $this->namespace_;
         $this->result['use'] = $this->use_;
         $this->result['functions'] = $this->functions;
+        $this->result['path'] = $fullname;
         
         
-        if(IS_DEBUG)
+        //if(IS_DEBUG)
         {
             //print_r($this->result);
-            echo "Writing json file -> " .$filename . PHP_EOL ;
+            echo "Writing json file -> ". $filename . PHP_EOL ;
         }
         
-        $content = json_encode($this->result);
+        if (PHP_VERSION_ID >= 50400)
+            $content = json_encode($this->result, JSON_PRETTY_PRINT);
+        else
+            $content = json_encode($this->result);
         
         if(IS_DEBUG)
             echo "content: " . $content.PHP_EOL;
@@ -360,17 +374,18 @@ class MyPhpParser
 
 
 
+$d = $argv[1];
 
+if(empty($d) )
+{
+    $d = getcwd(). DIRECTORY_SEPARATOR . "test";
+}
 
+$ind = new Indexer($d);
 
-$ind = new Indexer(getcwd(). DIRECTORY_SEPARATOR . "test");
-
-
-$filename = $argv[1];
-
-if(empty($filename))
+if( is_dir($d) )
     $ind->scan();
 else 
-    $ind->scanFile($filename);
+    $ind->scanFile($d);
 
 //getcwd()

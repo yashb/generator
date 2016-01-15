@@ -87,6 +87,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
     private $use_ = array();
     private $result;
     private $filename;
+    private $objects;
 
     private $className;
     private $classMethods;
@@ -107,10 +108,10 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
 
         $this->className = $node->name;
 
-        $this->result[$this->className]['type'] = $type;
-        $this->result[$this->className]['methods'] = array();
-        $this->result[$this->className]['use'] = array();
-        $this->result[$this->className]['position'] = array( "name" => $node->name , "position" => $node->getAttributes() );
+        $this->objects[$this->className]['type'] = $type;
+        $this->objects[$this->className]['methods'] = array();
+        $this->objects[$this->className]['use'] = array();
+        $this->objects[$this->className]['position'] = array( "name" => $node->name , "position" => $node->getAttributes() );
 
 
     }
@@ -193,7 +194,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
                 echo "\nClass method:". $node->name."\n\n";
 
             //$this->result[$this->className]['methods'][] = $node->name;
-            array_push( $this->result[$this->className]['methods'], array( "name" => $node->name , "position" => $node->getAttributes() ) );
+            array_push( $this->objects[$this->className]['methods'], array( "name" => $node->name , "position" => $node->getAttributes() ) );
             //$this->classMethods[] = $node->name;
 
             //print_r($node->getAttributes());
@@ -274,7 +275,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         }
         else
         {
-            $dir = CACHE_DIR . $this->namespace_ . DIRECTORY_SEPARATOR;
+            $dir = CACHE_DIR . $this->namespace_['name'] . DIRECTORY_SEPARATOR;
 
             DirHelper::createDir($dir);
 
@@ -282,10 +283,12 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         }
 
 
+        $this->result['objects'] =$this->objects;
         $this->result['namespace'] = $this->namespace_;
         $this->result['use'] = $this->use_;
         $this->result['functions'] = $this->functions;
         $this->result['path'] = $fullname;
+        
 
 
         //if(IS_DEBUG)

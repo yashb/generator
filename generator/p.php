@@ -10,7 +10,7 @@ use PhpParser\Node;
 use PhpParser\Node\Stmt;
 
 
-define("CACHE_DIR", ".kiwicache" . DIRECTORY_SEPARATOR );
+define("CACHE_DIR", ".kiwi" . DIRECTORY_SEPARATOR );
 define("IS_DEBUG", FALSE );
 
 
@@ -28,7 +28,7 @@ class Indexer
     {
 
         if(empty($filename))
-            return;
+        return;
 
         new MyPhpParser($filename);
     }
@@ -37,9 +37,9 @@ class Indexer
     {
 
         $iter = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($this->path, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::SELF_FIRST,
-            RecursiveIteratorIterator::CATCH_GET_CHILD // Ignore "Permission denied"
+        new RecursiveDirectoryIterator($this->path, RecursiveDirectoryIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST,
+        RecursiveIteratorIterator::CATCH_GET_CHILD // Ignore "Permission denied"
         );
 
         $paths = array($this->path);
@@ -47,7 +47,7 @@ class Indexer
         foreach ($iter as $file) {
 
             if(IS_DEBUG)
-                echo "File: ". $file->getPathname() . PHP_EOL;
+            echo "File: ". $file->getPathname() . PHP_EOL;
 
             if($file->getExtension() == "php")
             {
@@ -73,7 +73,7 @@ class DirHelper
     public static function createDir($dir)
     {
         if(!is_dir($dir))
-            mkdir( $dir , 0777, true);
+        mkdir( $dir , 0777, true);
     }
 
 
@@ -134,7 +134,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         else if ( $node instanceof Stmt\Interface_ )
         {
             if(IS_DEBUG)
-                echo "\nNode name:". $node->name."\n\n";
+            echo "\nNode name:". $node->name."\n\n";
 
             //print_r($node);
 
@@ -154,7 +154,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
             //Parse and get those functions also
 
             if(IS_DEBUG)
-                echo "\Trait name:". $node->name."\n\n";
+            echo "\Trait name:". $node->name."\n\n";
 
         }
         elseif ($node instanceof Stmt\TraitUse)
@@ -179,7 +179,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
 
 
             if(IS_DEBUG)
-                echo "\nClass name:". $node->name."\n\n";
+            echo "\nClass name:". $node->name."\n\n";
 
 
             $this->addItem($node, 'class');
@@ -191,7 +191,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         elseif ($node instanceof Stmt\ClassMethod)
         {
             if(IS_DEBUG)
-                echo "\nClass method:". $node->name."\n\n";
+            echo "\nClass method:". $node->name."\n\n";
 
             //$this->result[$this->className]['methods'][] = $node->name;
             array_push( $this->objects[$this->className]['methods'], array( "name" => $node->name , "position" => $node->getAttributes() ) );
@@ -210,10 +210,10 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         {
             $this->namespace_ = array( "name" => str_replace("\\" ,"/" ,$node->name) , "position" => $node->getAttributes() ) ;
 
-/*            $this->namespace_ =  $this->namespace_ );*/
+            /*            $this->namespace_ =  $this->namespace_ );*/
 
             if(IS_DEBUG)
-                echo "\nNode Namespace_ name:". $node->name."\n\n";
+            echo "\nNode Namespace_ name:". $node->name."\n\n";
 
 
 
@@ -225,7 +225,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         {
             //print_r($node);
             if(IS_DEBUG)
-                echo "\nNode Use_ Namespace_ name:";//. $node->uses[0]->name."\n\n";
+            echo "\nNode Use_ Namespace_ name:";//. $node->uses[0]->name."\n\n";
 
             foreach($node->uses as $use)
             {
@@ -261,7 +261,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         //$this->result[$className]= $classMethods;
 
         //Write a file with some node value
-       $this->writeJson();
+        $this->writeJson();
     }
 
     public function writeJson()
@@ -269,7 +269,23 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
 
         $fullname = $this->filename;
 
-        if(empty($this->namespace_))
+        //$path_parts = pathinfo($fullname);
+
+        //$dir = CACHE_DIR . $path_parts['dirname'] . DIRECTORY_SEPARATOR;
+        $dir = CACHE_DIR . dirname($fullname) . DIRECTORY_SEPARATOR;
+        $dir = str_replace("/var/www/html/thabo/","",$dir);
+        /*echo $path_parts['basename'], "\n";
+            echo $path_parts['extension'], "\n";
+        echo $path_parts['filename'], "\n"; // since PHP 5.2.0*/
+
+        //$dir = CACHE_DIR . $this->namespace_['name'] . DIRECTORY_SEPARATOR;
+
+        DirHelper::createDir($dir);
+
+        $filename = $dir .  basename($this->filename,".php") .'.json';
+
+
+      /*  if(empty($this->namespace_))
         {
             $filename = CACHE_DIR  .basename($this->filename,".php") .'.json';
         }
@@ -280,7 +296,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
             DirHelper::createDir($dir);
 
             $filename = $dir .  basename($this->filename,".php") .'.json';
-        }
+        }*/
 
 
         $this->result['objects'] =$this->objects;
@@ -288,7 +304,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         $this->result['use'] = $this->use_;
         $this->result['functions'] = $this->functions;
         $this->result['path'] = $fullname;
-        
+
 
 
         //if(IS_DEBUG)
@@ -298,12 +314,12 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         }
 
         if (PHP_VERSION_ID >= 50400)
-            $content = json_encode($this->result, JSON_PRETTY_PRINT);
+        $content = json_encode($this->result, JSON_PRETTY_PRINT);
         else
-            $content = json_encode($this->result);
+        $content = json_encode($this->result);
 
         if(IS_DEBUG)
-            echo "content: " . $content.PHP_EOL;
+        echo "content: " . $content.PHP_EOL;
 
         $fp = fopen($filename, 'w');
 
@@ -330,7 +346,7 @@ class MyPhpParser
         //Create cache dir
         DirHelper::createCache();
 
-        //Init 
+        //Init
         $this->initInstances();
 
         //parse file
@@ -388,8 +404,8 @@ if(empty($d) )
 $ind = new Indexer($d);
 
 if( is_dir($d) )
-    $ind->scan();
-else 
-    $ind->scanFile($d);
+$ind->scan();
+else
+$ind->scanFile($d);
 
 //getcwd()

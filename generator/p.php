@@ -111,7 +111,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
         $this->objects[$this->className]['type'] = $type;
         $this->objects[$this->className]['methods'] = array();
         $this->objects[$this->className]['use'] = array();
-        $this->objects[$this->className]['position'] = array( "name" => $node->name , "position" => $node->getAttributes() );
+        $this->objects[$this->className]['position'] = $node->getAttributes();
 
 
     }

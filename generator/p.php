@@ -110,6 +110,7 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
 
         $this->objects[$this->className]['type'] = $type;
         $this->objects[$this->className]['methods'] = array();
+        $this->objects[$this->className]['variables'] = array();
         $this->objects[$this->className]['use'] = array();
         $this->objects[$this->className]['position'] = $node->getAttributes();
 
@@ -206,6 +207,21 @@ class MyParserNodeVisitor extends \PhpParser\NodeVisitorAbstract
                 $const->name = $const->namespacedName->toString('_');
             }*/
         }
+        elseif ($node instanceof Stmt\PropertyProperty)
+        {
+            print_r($node);
+
+            array_push( $this->objects[$this->className]['variables'], array( "name" => $node->name , "position" => $node->getAttributes() ) );
+
+
+
+            /*foreach ($node->items as $prop) {
+                echo "Prop: ";
+                print_r($prop);
+            }*/
+
+        }
+
         elseif ($node instanceof Stmt\Namespace_)
         {
             $this->namespace_ = array( "name" => str_replace("\\" ,"/" ,$node->name) , "position" => $node->getAttributes() ) ;
